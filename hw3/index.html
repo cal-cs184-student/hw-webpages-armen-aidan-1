@@ -32,8 +32,8 @@
 
 		<br>
 
-		Link to webpage: (TODO) <a href="https://cs184.eecs.berkeley.edu/sp25">cs184.eecs.berkeley.edu/sp25</a>
-		Link to GitHub repository: (TODO) <a href="https://cs184.eecs.berkeley.edu/sp25">cs184.eecs.berkeley.edu/sp25</a>
+		Link to webpage: (TODO) <a href="https://cal-cs184-student.github.io/hw-webpages-armen-aidan-1/hw3/index.html">https://cal-cs184-student.github.io/hw-webpages-armen-aidan-1/hw3/index.html</a>
+		Link to GitHub repository: (TODO) <a href="https://github.com/cal-cs184-student/hw-webpages-armen-aidan-1">https://github.com/cal-cs184-student/hw-webpages-armen-aidan-1</a>
 		
 		<figure>
 			<img src="cornell.png" alt="Cornell Boxes with Bunnies" style="width:70%"/>
@@ -48,7 +48,84 @@
 		Give a high-level overview of what you implemented in this homework. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the homework.
 
 		<h2>Part 1: Ray Generation and Scene Intersection</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+			<h3>Ray generation and primitive intersection</h3>
+			<p>
+				The overall goal of ray generation is to find the equation of the rays (in world coordinates) that originate from the pinhole and pass through each pixel on the sensor plane so we can sample the radiance through these pixels accordingly. 
+			</p>
+			<p>
+				We generate rays by first mapping the normalized image point \( \{ (x,y) \in [0,1] \times [0,1] \}\) into camera space coordinates with the following relationship:
+				\[ (x_{cam},y_{cam}, -1) = \bigl( \tan(\frac{1}{2}hFov_{rad})(2x-1),\ \tan(\frac{1}{2}vFov_{rad})(2y-1) \bigr) \]
+				The camera ray has direction \( \mathbf{d_{cam}} \) which points from the pinhole to the sampled point on the sensor, and is given by \( \mathbf{d_{cam}} = (x_{cam},y_{cam}, -1) - \mathbf{o_{cam}} = \{x_{cam},y_{cam}, -1\} \).
+				We then map \(\mathbf{d_{cam}}\) into world coordinates with the provided transformation matrix <code>c2w</code> resulting in \(\mathbf{d_{world}}\) which we normalize. 
+				The origin of the camera ray in world space is provided as <code>pos</code>. We construct the ray as <code>Ray(pos, world_d)</code>. 
+				We also make sure to set the <code>min_t</code> and <code>max_t</code> as <code>nClip</code> and <code>fClip</code> respectively before returning the ray.
+			</p>
+			<p>
+				While ray generation is naturally conducted in the normalized image space to account for variations in the camera properties, 
+				we rasterize the image in the un-normalized image space as done previously in this course. 
+				To rasterize a pixel, we estimate the integral of radiance over it by randomly generating <code>ns_aa</code> rays passing through the pixel, 
+				and summing the estimated scene radiance along each ray. For each sample, we take a grid sample \( \{ (\alpha,\beta) \in [0,1] \times [0,1] \}\) using <code>gridSampler->getSample()</code>
+				and generate a sample location in normalized image space: 
+				\[ (p_{sx},p_{sy}) = \bigl( \frac{x_{img} + \alpha}{w},\frac{y_{img} + \beta}{h} \bigr)	\]
+				We generate a ray at this location, use the function <code>est_radiance_global_illumination()</code> to estimate the radiance along this ray, 
+				increment the radiance sum, and then after looping through all samples, divide the radiance sum by <code>ns_aa</code> to end up with the average radiance.
+				We then update the sample buffer with the radiance integrated over the pixel.
+
+			</p>
+			<p>
+				We handle primitive intersection with two closely related methods <code>has_intersection()</code> and 
+				<code>intersect()</code> for both triangles and spheres. <code>has_intersection()</code> checks if the input ray intersects with the primitive, 
+				returning <code>true</code> if it intersects and updating <code>max_t</code> to equal the \(t\) of the intersection, otherwise returning <code>false</code>.
+				<code>intersect()</code> works similarly but additionally takes an <code>Intersection</code> object as an input and updates its member variables
+				which store information about the collision. For each primitive type we solve for the \(t\) of the intersection and check if the intersection point lies within the visible poriton of the scene.
+			</p>
+
+			<h3>Triangle intersection algorithm: Möller-Trumbore</h3>
+			<p>
+				We implemented the widely used Möller-Trumbore algorithm to test for ray-triangle intersection. 
+				Our implementation follows the one outlined on <a href="https://en.wikipedia.org/wiki/Möller–Trumbore_intersection_algorithm">Wikipedia</a>.
+			</p>
+			<p>
+				We begin by defining two edges of the triangle \(\mathbf{e_1 = p_2 - p_1}\) and \(\mathbf{e_2 = p_3 - p_1}\). 
+				We take the cross product of the ray's direction and the second edge:  \( \mathbf{d_{xe_2}} = \mathbf{d} \times \mathbf{e_2} \)
+				If \( \mathbf{d_{xe_2}} \) is perpendicular to the other edge, it means the ray is parallel to the plane of the triangle and will not intersect it.
+				We test this by checking if \( \mathbf{a} = \mathbf{e_1} \cdot \mathbf{d_{xe_2}} \) is equal to zero, if it is we return <code>false</code>.
+				While this approach is not intuitive, it allows you to re-use computations later for greater efficiency.
+
+				The intersection is calculated by solving a system of equations for \(u,v,t\) which comes from substituting the ray equation into the plane equation.
+				We solve for the barycentric coordinate \(u\), check if it is between 0 and 1, returning false if it is not.
+				Then we do the same for \(v\), then check that (1-u-v) is between 0 and 1, and finally solve for \(t\), ensuring that it is in the specified range of <code>t_min</code> and <code>t_max</code>.
+			</p>
+			<p>Here are some renderings after implementing ray generation and primitive intersection.</p>
+
+			<div style="display: flex; flex-direction: column; align-items: center;">
+				<table style="width: 100%; text-align: center; border-collapse: collapse;">
+				  <tr>
+					<td style="text-align: center;">
+					  <img src="bunny1.png" width="300px"/>
+					  <figcaption>Bunny</figcaption>
+					</td>
+					<td style="text-align: center;">
+					  <img src="dragon1.png" width="300px"/>
+					  <figcaption>Dragon</figcaption>
+					</td>
+				  </tr>
+				  <tr>
+					<td style="text-align: center;">
+					  <img src="gems1.png" width="300px"/>
+					  <figcaption>Gems in Cornell box</figcaption>
+					</td>
+					<td style="text-align: center;">
+					  <img src="coil1.png" width="300px"/>
+					  <figcaption>Coil in Cornell box</figcaption>
+					</td>
+				  </tr>
+				</table>
+			</div>
+		
+
+		
+
 
 		<p>Here is an example 2x2 gridlike structure using an HTML table. Each <b>tr</b> is a row and each <b>td</b> is a column in that row. You might find this useful for framing and showing your result images in an organized fashion.</p>
 		<div style="display: flex; flex-direction: column; align-items: center;">
