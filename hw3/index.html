@@ -226,11 +226,77 @@
 			we append the Monte-Carlo sum as done before for hemisphere sampling, taking care to transform the \(\omega_i\) given by <code>sample_L(...)</code> to the object frame when performing our calculations
 			and to use the biased PDF returned by <code>sample_L(...)</code>. We increment the total reflected radiance by the Monte-Carlo sum normalized by the number of samples. 
 		</p>
-		<h3>Comparing sampling methods</h3>
+		<h3>Direct Ligthing: Comparing sampling methods</h3>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+				<table style="width: 100%; text-align: center; border-collapse: collapse;">
+				  <tr>
+					<td style="text-align: center;">
+					  <img src="spheres_H_64_32.png" width="300px"/>
+					  <figcaption>Spheres, hemisphere sampling</figcaption>
+					</td>
+					<td style="text-align: center;">
+					  <img src="spheres_64_32.png" width="300px"/>
+					  <figcaption>Spheres, importance sampling</figcaption>
+					</td>
+				  </tr>
+				  <tr>
+					<td style="text-align: center;">
+					  <img src="CBcoil_H_64_32.png" width="300px"/>
+					  <figcaption>Coil, hemisphere sampling</figcaption>
+					</td>
+					<td style="text-align: center;">
+					  <img src="CBcoil_64_32.png" width="300px"/>
+					  <figcaption>Coil, importance sampling</figcaption>
+					</td>
+				  </tr>
+				</table>
+			</div>
+
+			<br>
+			<p>
+				Here we demonstrate the effect of taking more samples per light when importance sampling. With fewer light samples, soft shadows
+				are objectionably noisy and discontinuous with isolated black pixels appearing in the penumbra. Increasing more samples tightens
+				this region and creates a smoother gradient between the hard and soft shadow regions. This is because there is a smoother range of
+				shades as the number of samples increases and the pixel shading approches its "true" value.
+			</p>
+
+			<div style="display: flex; flex-direction: column; align-items: center;">
+				<table style="width: 100%; text-align: center; border-collapse: collapse;">
+				  <tr>
+					<td style="text-align: center;">
+					  <img src="CBbunny_1_1.png" width="300px"/>
+					  <figcaption>Bunny, 1 sample per pixel, 1 sample per area light</figcaption>
+					</td>
+					<td style="text-align: center;">
+					  <img src="CBbunny_1_4.png" width="300px"/>
+					  <figcaption>Bunny, 1spp, 4 spl</figcaption>
+					</td>
+				  </tr>
+				  <tr>
+					<td style="text-align: center;">
+					  <img src="CBbunny_1_16.png" width="300px"/>
+					  <figcaption>Bunny, 1spp, 16 spl</figcaption>
+					</td>
+					<td style="text-align: center;">
+					  <img src="CBbunny_1_64.png" width="300px"/>
+					  <figcaption>Bunny, 1spp, 64 spl</figcaption>
+					</td>
+				  </tr>
+				</table>
+			</div>
 		
-		// soft shadow comparison figure
 
 		<h3>Analysis</h3>
+		<p>
+			The effectiveness of light importance sampling for direct lighting is clear when increasing the 
+			number of pixel samples to isolate the lighting calculation noise. For the same total number of samples,
+			equivalent to 32 samples per light, light sampling virtually eliminates any visible grain as compared
+			to uniform hemisphere sampling. This brings a significant improvement in image quality. Hemisphere sampling
+			does however render a glow around the border of the light that doesn't appear in the light sampling renders,
+			which have an unrealistically sharp border. These renderings shouldn't be evaluated on their realism too heavily
+			since the indirect lighting is missing.
+		</p>
 
 		<h2>Part 4: Global Illumination</h2>
 		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
