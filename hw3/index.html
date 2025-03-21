@@ -47,6 +47,14 @@
 		<h2>Overview</h2>
 		Give a high-level overview of what you implemented in this homework. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the homework.
 
+		<p>
+			<b>Note: We utilized LLMs to aid in the debugging of this project due to the increased complexity compared to previous projects
+				and our relative inexperience in developing C++. We were able to catch simple mistakes by utilizing these tools. 
+				Their specific use is outlined in the parts of the write up when applicable.
+			</b>
+		</p>
+		
+
 		<h2>Part 1: Ray Generation and Scene Intersection</h2>
 			<h3>Ray generation and primitive intersection</h3>
 			<p>
@@ -123,41 +131,106 @@
 				</table>
 			</div>
 		
-
-		
-
-
-		<p>Here is an example 2x2 gridlike structure using an HTML table. Each <b>tr</b> is a row and each <b>td</b> is a column in that row. You might find this useful for framing and showing your result images in an organized fashion.</p>
-		<div style="display: flex; flex-direction: column; align-items: center;">
-			<table style="width: 100%; text-align: center; border-collapse: collapse;">
-			  <tr>
-				<td style="text-align: center;">
-				  <img src="cornell.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
-				</td>
-				<td style="text-align: center;">
-				  <img src="cornell.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
-				</td>
-			  </tr>
-			  <tr>
-				<td style="text-align: center;">
-				  <img src="cornell.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
-				</td>
-				<td style="text-align: center;">
-				  <img src="cornell.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
-				</td>
-			  </tr>
-			</table>
-		</div>
-		
 		<h2>Part 2: Bounding Volume Hierarchy</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+			<h3>BVH Construction algorithm</h3>
+			<p>
+				<!-- Walk through your BVH construction algorithm. Explain the heuristic you chose for picking the splitting point. -->
+				 The BVH construction algorithm takes in a vector of primitives, given as start and end iterators to a vector of primitives, 
+				 and a parameter specifying the maximum size of the node. It starts by forming a bounding box enclosing all the objects in the list
+				 by iteratively expanding the bounding box to include every object. We then instantiate a <code>Node</code> with this bounding box
+				 passed as an argument. To differentiate this collection of primitives as a leaf or interior node, we check how many primitives are in the list
+				 and if there are fewer than or equal to <code>max_leaf_size</code> primitives then it is a leaf node, and set it member variables accordingly,
+				 particularly setting its left and right children to null before returning it.
+			</p>
+			<p>
+				Contininuing for interior nodes, we must divide the list of primitives into a left and right group based on some splitting heuristic.
+				For simplicity, we chose the median of the largest axis of the bounding box. We determined along which axis the bounding box is longest 
+				by finding the maximum element of its extents vector, and the corresponding index \([0],[1],[2]\) for x, y, z respectively. We then
+				sort the list of primitves based on the position of their centroids along the longest axis. It is then easy to define the start and end iterators of the 
+				left and right groups. For the left group it is simply <code>lStart = start, lEnd = start + n_prims/2</code> and for the right group it 
+				is <code>rStart = lEnd, rEnd = end</code>.
+			</p>
+			<p>
+				Lastly, for the node, which at this point is an interior node, we set its left child to a call of <code>construct_bvh</code> with <code>lStart, lEnd</code> 
+				and similarly for its right child. Eventually these recursive calls will divide into primitive groups small enough to become leaf nodes which are returned as the base case.
+			</p>
+			<p><b>Use of Generative AI:</b> In part 2 we utilized a LLM to fix our usage of <code>std::sort</code> due to our unfamiliarity
+			with coding C++. We it also helped us discover a bug in <code>intersect()</code> which was incorrectly swapping <code>t0</code> and
+			<code>t1</code> if <code>t1 > t0</code>.</p>
+			<h3> <!--Show images with normal shading for a few large .dae files that you can only render with BVH acceleration.-->
+				Images rendered using BVH acceleration
+			</h3>
+				<div style="display: flex; flex-direction: column; align-items: center;">
+					<table style="width: 100%; text-align: center; border-collapse: collapse;">
+					  <tr>
+						<td style="text-align: center;">
+						  <img src="lucy2.png" width="300px"/>
+						  <figcaption>Lucy rendered in 0.044s after taking .15s to build BVH</figcaption>
+						</td>
+						<td style="text-align: center;">
+						  <img src="beast2.png" width="300px"/>
+						  <figcaption>Beast rendered in 0.039s after taking 0.07s to build BVH</figcaption>
+						</td>
+					  </tr>
+					</table>
+				</div>
 
+			<h3> BVH Acceleration Analysis</h3>
+			<p>
+				As a baseline to test the effectiveness of BVH acceleration, we tried to render the above images without the 
+				accelration structure. This entailed reverting the <code>has_intersection()</code> and <code>intersect()</code> method 
+				to the versions which test the intersection of a ray against every object in the scene. For the modarately complex scene 
+				<code>beast.dae</code> it took a little over 2 minutes to render without BVH acceleration. For the complex scene <code>CBLucy.dae</code>,
+				it took nearly 7 minutes to render without BVH accleration. This is due to the fact that the tracing a single ray has \( O(n)\)
+				time complexity in the number of objects \(n\) without BVH accelration versus \( O(log(n))\) complexity with BVH acceleration.
+				Rendering <code>beast.dae</code> without BVH accelration requires nearly 7 billion intersection tests as opposed to approximately 120,000
+				intersection tests with the acceleration. We see that the ratio of these numbers is 56,694 which is on the same order of \(\frac{n}{log(n)}=\frac{64618}{log(64618)} = 13433\).
+				
+			</p>
+			
 		<h2>Part 3: Direct Illumination</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<h3>Implementing uniform hemisphere sampling</h3>
+			<p>
+				The hemisphere sampling direct lighting function estimates the light reflected at the point
+				\(p\) in the direction of the camera ray which strictly originates from light sources in the scene. 
+				First we set up a local (object) coordinate system at \(p\), defining transformation matricies from the object to the global
+				frame, defining \(p\) using the arguments <code>Ray r</code> and <code>Intersection isect</code> which describe the camera ray
+				and its intersection at \(p\), and defining \(\omega_o\) which is the vector coincident and opposing the camera ray definied in the object frame.
+			</p>
+			<p>
+				Then we begin a loop over <code>num_samples</code> samples, which is selected to match the number of samples we will take when
+				importance sampling for the purpose of comparsion. Inside the sample loop we use <code>hemisphereSampler->get_sample()</code> to 
+				draw a sample vector \(\omega_i\), which is a random vector defined in the object frame pointing to the surface of the unit hemisphere.
+				Then we cast a sampling ray from \(p\) in the \(\omega_i\) direction, transformed to the world frame, and check to see if it intersects
+				with a primitive in the scene using our BVH acceleration structure <code>bvh->intersect()</code>. We make sure to set the <code>min_t</code>
+				parameter of this sampling ray to the small constant \(\epsilon\) to ensure that we do not unintentionally return an intersection with the 
+				reflecting surface due to numerical precision errors. To check if this sampling ray intersects a light source, since direct lighting only 
+				entails 0-1 bounce lighting from sources, we see if the sampling ray intersects any object, and if it does, we also check if the emission
+				at the intersection point is non-zero. If it is a light source, we proceed with calculating the reflection equation by incrementing reflected radiance Monte-Carlo sum
+				by \(\mathbf{f(\omega_o,\omega_i)L_i(\omega_i\cdot k)}/\mathtt{p}\) where \(f\) is the BSDF evaluated at \(p\), \(L_i\) is the emission of the sampled source
+				(which would be zero if the sample didn't intersect a source, in which case nothing would be appended), \(\omega_i\cdot k\) represents the 
+				cosine of the angle made between the incoming light and the surface normal at \(p\), and \(\mathtt{p}\) is the uniform hemisphere PDF, \(\mathtt{p} = \frac{1}{2\pi}\).
+			</p>
+			<p>After completing the sampling loop, the function returns the Monte-Carlo sum normalized by the number of samples as the radiance estimatate.</p>
+		<h3>Implementing light importance sampling</h3>
+		<p>
+			The importance sampling function takes biased samples of all of the lights in the scene to calculate the reflectance equation for direct lighting to increase
+			the sample efficiency, thereby reducing noise.
+		</p>
+		<p>
+			We first set up a coordinate system in the same manner as described above for hemispherical ligthing. Then, looping through all the lights which are accessed by looping
+			over a vector of pointers to <code>SceneLight</code> objects, we take <code>ns_area_light</code> samples per light, unless the current light is a point source,
+			in which case we only take one sample. In the sampling loop we use the helper function <code>sample_L(p,wi,distToLight,pdf)</code> to sample the radiance \(L_i\) passing from the 
+			source to the reflection point \(p\). To determine if the sample point is occluded, we cast a shadow ray from \(p\) to the point on the light with a maximum intersection
+			distance that is just before the light <code>distToLight - EPS_F</code> and a minimum intersection distance of <code>EPS_F</code> like before. If no intersection is found,
+			we append the Monte-Carlo sum as done before for hemisphere sampling, taking care to transform the \(\omega_i\) given by <code>sample_L(...)</code> to the object frame when performing our calculations
+			and to use the biased PDF returned by <code>sample_L(...)</code>. We increment the total reflected radiance by the Monte-Carlo sum normalized by the number of samples. 
+		</p>
+		<h3>Comparing sampling methods</h3>
+		
+		// soft shadow comparison figure
+
+		<h3>Analysis</h3>
 
 		<h2>Part 4: Global Illumination</h2>
 		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
