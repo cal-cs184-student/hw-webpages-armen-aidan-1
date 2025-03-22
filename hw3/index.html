@@ -292,10 +292,10 @@
 			The effectiveness of light importance sampling for direct lighting is clear when increasing the 
 			number of pixel samples to isolate the lighting calculation noise. For the same total number of samples,
 			equivalent to 32 samples per light, light sampling virtually eliminates any visible grain as compared
-			to uniform hemisphere sampling. This brings a significant improvement in image quality. Hemisphere sampling
-			does however render a glow around the border of the light that doesn't appear in the light sampling renders,
-			which have an unrealistically sharp border. These renderings shouldn't be evaluated on their realism too heavily
-			since the indirect lighting is missing.
+			to uniform hemisphere sampling. This brings a significant improvement in image quality, especially when looking at the walls of the Cornell Box. 
+			Hemisphere sampling also renders a glow around the border of the light that doesn't appear in the light sampling renders,
+			which have a less washed out border. It makes it appear like the light is illuminating above itself even though this shouldn't be possible
+			with direct lighting.
 		</p>
 
 		<h2>Part 4: Global Illumination</h2>
