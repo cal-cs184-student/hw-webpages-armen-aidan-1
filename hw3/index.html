@@ -45,10 +45,16 @@
 		-->
 
 		<h2>Overview</h2>
-		Give a high-level overview of what you implemented in this homework. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the homework.
+		In this assignment we implemented a configurable pathtracing renderer which can render COLLADA scenes with global illumination.
+		We implemented algorithms to compute the intersection of rays with primative objects like triangles and spheres. We implemented a bounding volume
+		hierarchy acceleration structure to reduce the operation cost of intersection tests and vastly increase the speed of our renderer. 
+		To calculate global illumination we used Monte-Carlo estimators to compute the reflection equation and leveraged importance sampling to improve our sample efficiency.
+		Overall, this was a great experience in learning about acceleration structures for intersections (useful for our research in multi-body physics)
+		and how to approximate a complex function with biased estimators. 
 
 		<p>
-			<b>Note: We utilized LLMs to aid in the debugging of this project due to the increased complexity compared to previous projects
+			<b>
+				Note: We utilized LLMs to aid in the debugging of this project due to the increased complexity compared to previous projects
 				and our relative inexperience in developing C++. We were able to catch simple mistakes by utilizing these tools. 
 				Their specific use is outlined in the parts of the write up when applicable.
 			</b>
@@ -299,7 +305,282 @@
 		</p>
 
 		<h2>Part 4: Global Illumination</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<h3>Implementing Indirect Lighting</h3>
+			<p>
+				Indirect lighting is light that is reflected at a point \(p\) towards the camera which does not originate from an emissive source in the scene.
+				It is calculated by recursively casting a ray that intersects another (non-light) object at point \(p^{'}\) and computing how much direct (one bounce) and indirect 
+				(\(>1\) bounce)	radiance is reflected back towards \(p\). The one bounce radiance reflected from \(p^{'}\) to \(p\) is simply returned by the <code>one_bounce_radiance(...)</code>
+				function explained earlier. To compute the \(>1 \) bounce radiance reflected from \( p^{'} \) to \(p\) we have to use the indirect lighting function
+				to calculate the \(\geq\)1 bounce radiance reflected at \(p^{''}\) towards \(p^{'}\), which can continue to recurse for \(N\) bounces.
+			</p>
+			<p>
+				In our implementation of the indirect lighting function, we begin by establishing an object coordinate system at the point of intersection, as done before for our direct lighting function.
+				We then sample an incident light direction \(\omega_i\) which is importance sampled from the intersection's BSDF using <code>sample_f(w_out,&wi,&pdf)</code>.
+				The samples are biased to incoming light directions that will likely reflect in the queried direction \(\omega_o\), increasing sample efficiency for anisotropic materials.
+				We cast a new inverse ray in the \(\omega_i\) direction, check if it intersects the scene, check if it is a non-emissive object, then increment the 
+				total reflected radiance towards \(p\) with the estimator of the reflection equation where \(L_i\) is the >=1 bounce radiance, returned by a recursive call of
+				<code>at_least_one_bounce_radiance(sample_ray,sample_isect)</code>. The estimator uses the computes BSDF <code>f</code> and PDF returned by <code>sample_f(...)</code>. We terminate the recursion if we have recursed <code>max_ray_depth</code> bounces, which is tracked by setting the depth of the new sample ray
+				to the depth of the incoming inverse ray minus one. If the depth of the sample ray is zero, we do not sample the indirect light at the sample point. If we are using Russian Roulette to reduce the bias of our indirect lighting calculation, 
+				we terminate the recursion with a fixed probability for any given sample and we also normalize each indirect radiance sample by the continuation probability.
+			</p>
+			<p>
+				After terminating the recursion, we add on the reflected one bounce radiance to the returned value so we accumulate both the direct and indirect light reflected towards the camera.
+				If we are not accumulating radiance then we only add the one bounce radiance from the last sample. The rasterizer will then call <code>est_radiance_global_illumination(...)</code> on 
+				the camera rays and return the sum of <code>zero_bounce_radiance(...)</code> and <code>at_least_one_bounce_radiance(...)</code>.
+			</p>
+
+			<h3>Scenes rendered with global illumination:</h3>
+			<div style="display: flex; flex-direction: column; align-items: center;">
+				<table style="width: 100%; text-align: center; border-collapse: collapse;">
+				  <tr>
+					<td style="text-align: center;">
+					  <img src="bunny_1024.png" width="300px"/>
+					  <figcaption>Bunny, 1024 spp, 16 spl, d_max 4</figcaption>
+					</td>
+					<td style="text-align: center;">
+					  <img src="bench_1024.png" width="300px"/>
+					  <figcaption>Bench, 1024 spp, 16 spl, d_max 4</figcaption>
+					</td>
+				  </tr>
+				  <tr>
+					<td style="text-align: center;">
+					  <img src="blob_1024.png" width="300px"/>
+					  <figcaption>Blob, 1024 spp, 16 spl, d_max 4</figcaption>
+					</td>
+					<td style="text-align: center;">
+					  <img src="walle_1024.png" width="300px"/>
+					  <figcaption>Wall-E, 1024 spp, 16 spl, d_max 4</figcaption>
+					</td>
+				  </tr>
+				</table>
+			</div>
+
+			<h3>Direct Illumination vs. Indirect Illumination</h3>
+			<p>
+				In the scene below, the direct illumination rendering is high-contrast with bright highlights and dark, hard shadows.
+				One thing to notice is that the directly illuminated scene has no underlighting of the spheres and the ceiling is completely black.
+				The indirect illumination lights the ceiling, under lights the spheres, and softly splashes the color of the walls onto the spheres. 
+				When superimposed, these lighting methods bring about a realistic, pleasant visual.
+			</p>
+			<div style="display: flex; flex-direction: column; align-items: center;">
+				<table style="width: 100%; text-align: center; border-collapse: collapse;">
+				  <tr>
+					<td style="text-align: center;">
+					  <img src="spheres_direct_v_indirect/spheres_direct_1024.png" width="300px"/>
+					  <figcaption>Spheres, 1024 spp, direct lighting only</figcaption>
+					</td>
+					<td style="text-align: center;">
+					  <img src="spheres_direct_v_indirect/spheres_indirect_1024.png" width="300px"/>
+					  <figcaption>Spheres, 1024 spp, indirect lighting only</figcaption>
+					</td>
+				  </tr>
+				</table>
+			</div>
+
+			<h3>M<sup>th</sup> bounce of light</h3>
+			<p>
+				By isolating each bounce of light in the global illumination rendering, we can see the image features
+				each bounce contributes. Particularly, the second bounce underlights the bunny revealing its face, details on its chest,
+				and adding highlights on the ears which make them very prominent in the image (as a bunny's ears should be!). 
+				The second and third bounces also cast the colors of the wall on to the sides of the bunny, which would not be possible in
+				conventional rasterization as the bunny's color would only depend on its texture and the light sources in the scene and would not
+				be dependent on the color of other objects like the walls and their relative positons.
+			</p>
+			<div style="display: flex; flex-direction: column; align-items: center;">
+				<table style="width: 100%; text-align: center; border-collapse: collapse;">
+				  <tr>
+					<td style="text-align: center;">
+					  <img src="CBbunny_final_bounce/CBbunny_1024_FB_m0.png" width="360px"/>
+					  <figcaption>CBbunny, 1024 spp, 0th bounce</figcaption>
+					</td>
+				  </tr>
+				  <tr>
+					<td style="text-align: center;">
+					  <img src="CBbunny_final_bounce/CBbunny_1024_FB_m1.png" width="360px"/>
+					  <figcaption>CBbunny, 1024 spp, 1st bounce</figcaption>
+					</td>
+				  </tr>
+				  <tr>
+					<td style="text-align: center;">
+					  <img src="CBbunny_final_bounce/CBbunny_1024_FB_m2.png" width="360px"/>
+					  <figcaption>CBbunny, 1024 spp, 2nd bounce</figcaption>
+					</td>
+				  </tr>
+				  <tr>
+					<td style="text-align: center;">
+					  <img src="CBbunny_final_bounce/CBbunny_1024_FB_m3.png" width="360px"/>
+					  <figcaption>CBbunny, 1024 spp, 3rd bounce</figcaption>
+					</td>
+				  </tr>
+				  <tr>
+					<td style="text-align: center;">
+					  <img src="CBbunny_final_bounce/CBbunny_1024_FB_m4.png" width="360px"/>
+					  <figcaption>CBbunny, 1024 spp, 4th bounce</figcaption>
+					</td>
+				  </tr>
+				  <tr>
+					<td style="text-align: center;">
+					  <img src="CBbunny_final_bounce/CBbunny_1024_FB_m5.png" width="360px"/>
+					  <figcaption>CBbunny, 1024 spp, 5th bounce</figcaption>
+					</td>
+				  </tr>
+				</table>
+			</div>
+
+		<h3>Accumulated vs. Unaccumulated M<sup>th</sup> bounce light</h3>
+		<p>
+			Accumulating the light from each successive bounce combines the qualities of each bounce into a cohesive image.
+			The differences become less noticeable after the second bounce of light since the light has diffused about the scene and the 
+			energy of successive bounces decreases significantly.
+		</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="CBbunny_final_bounce/CBbunny_1024_FB_m0.png" width="360px"/>
+				  <figcaption>CBbunny, 1024 spp, 0th bounce</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="CBbunny_accum/CBbunny_1024_accum_m0.png" width="360px"/>
+					<figcaption>CBbunny, 1024 spp, accumulated 0th bounce</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="CBbunny_final_bounce/CBbunny_1024_FB_m1.png" width="360px"/>
+				  <figcaption>CBbunny, 1024 spp, 1st bounce</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="CBbunny_accum/CBbunny_1024_accum_m1.png" width="360px"/>
+					<figcaption>CBbunny, 1024 spp, accumulated 1st bounce</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="CBbunny_final_bounce/CBbunny_1024_FB_m2.png" width="360px"/>
+				  <figcaption>CBbunny, 1024 spp, 2nd bounce</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="CBbunny_accum/CBbunny_1024_accum_m2.png" width="360px"/>
+					<figcaption>CBbunny, 1024 spp, accumulated 2nd bounce</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="CBbunny_final_bounce/CBbunny_1024_FB_m3.png" width="360px"/>
+				  <figcaption>CBbunny, 1024 spp, 3rd bounce</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="CBbunny_accum/CBbunny_1024_accum_m3.png" width="360px"/>
+					<figcaption>CBbunny, 1024 spp, accumulated 3rd bounce</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="CBbunny_final_bounce/CBbunny_1024_FB_m4.png" width="360px"/>
+				  <figcaption>CBbunny, 1024 spp, 4th bounce</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="CBbunny_accum/CBbunny_1024_accum_m4.png" width="360px"/>
+					<figcaption>CBbunny, 1024 spp, accumulated 4th bounce</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="CBbunny_final_bounce/CBbunny_1024_FB_m5.png" width="360px"/>
+				  <figcaption>CBbunny, 1024 spp, 5th bounce</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="CBbunny_accum/CBbunny_1024_accum_m5.png" width="360px"/>
+					<figcaption>CBbunny, 1024 spp, accumulated 5th bounce</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<h3>Global Illumination with Russian Roulette</h3>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="CBbunny_RR/CBbunny_1024_RR_m0.png" width="300px"/>
+				  <figcaption>Russian Roulette, max depth 0</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="CBbunny_RR/CBbunny_1024_RR_m1.png" width="300px"/>
+					<figcaption>Russian Roulette, max depth 1</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="CBbunny_RR/CBbunny_1024_RR_m2.png" width="300px"/>
+					<figcaption>Russian Roulette, max depth 2</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+					<img src="CBbunny_RR/CBbunny_1024_RR_m3.png" width="300px"/>
+					<figcaption>Russian Roulette, max depth 3</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="CBbunny_RR/CBbunny_1024_RR_m4.png" width="300px"/>
+					<figcaption>Russian Roulette, max depth 4</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="CBbunny_RR/CBbunny_1024_RR_m100.png" width="300px"/>
+					<figcaption>Russian Roulette, max depth 100</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<h3>Pixel sample rate comparison</h3>
+		<p>
+			Increasing the pixel sample rate, i.e. the number of camera rays sampled per pixel, decreases the perceptible noise
+			in the scene. Starting at 32 samples per pixel, the rendering loses its grainy 'film camera' appearance and starts to look like
+			a realistic object that is made out of a matte ceramic material. 64 samples is a good compromise between noise level and rendering speed.
+		</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="dragon_sampling/dragon_1_m4.png" width="240px"/>
+				  <figcaption>1 spp</figcaption>
+				</td>
+		
+				<td style="text-align: center;">
+					<img src="dragon_sampling/dragon_2_m4.png" width="240px"/>
+					<figcaption>2 spp</figcaption>
+				</td>
+
+				<td style="text-align: center;">
+					<img src="dragon_sampling/dragon_4_m4.png" width="240px"/>
+					<figcaption>4 spp</figcaption>
+				</td>
+
+				<td style="text-align: center;">
+					<img src="dragon_sampling/dragon_8_m4.png" width="240px"/>
+					<figcaption>8 spp</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+					<img src="dragon_sampling/dragon_16_m4.png" width="240px"/>
+					<figcaption>16 spp</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="dragon_sampling/dragon_32_m4.png" width="240px"/>
+					<figcaption>32 spp</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="dragon_sampling/dragon_64_m4.png" width="240px"/>
+					<figcaption>64 spp</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="dragon_sampling/dragon_1024_m4.png" width="240px"/>
+					<figcaption>1024 spp</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
 
 		<h2>Part 5: Adaptive Sampling</h2>
 		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
