@@ -90,39 +90,90 @@
 			</table>
 		</div>
 
-		
-
-
-		
-
-
+		<h2>Part 2: Simulation via numerical integration</h2>
+		<h3>Experimenting with simulation parameters for 2 pinned cloth</h3>
+		<p>
+			Adjusting the <b>stiffness</b> value to a low <code>ks</code> made the cloth very billowy and introduced finer ripples as the cloth settled to its
+			resting position. In contrast, setting the stiffness to high value results in a single, parabolic crease between the pinned points and the vertical 
+			creases at the bottom edge are not very prominent as the cloth swings into the vertical configuration. In the low stiffness case it takes longer for the
+			constraint forces to propegate through the cloth as compared to the stiff cloth. This is consistent with the fact that waves propegate faster through stiffer materials 
+			(this is why the speed of sound is faster in water than in air.)
+		</p>
 		<div style="display: flex; flex-direction: column; align-items: center;">
 			<table style="width: 100%; text-align: center; border-collapse: collapse;">
 			  <tr>
 				<td style="text-align: center;">
-				  <img src="clothsim.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="images/2_nom.png" width="400px"/>
+				  <figcaption>nominal ks = 5000</figcaption>
 				</td>
 				<td style="text-align: center;">
-				  <img src="clothsim.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="images/2_stiff.png" width="400px"/>
+				  <figcaption>ks = 50000</figcaption>
 				</td>
+				<caption>Deformations are much more homogenous for a high stiffness fabric compared to the nominal stiffness in mid swing.</caption>
 			  </tr>
+			</table>
+
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
 			  <tr>
 				<td style="text-align: center;">
-				  <img src="clothsim.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="images/2_nom_low.png" width="400px"/>
+				  <figcaption>Vertical draping, nominal ks = 5000</figcaption>
 				</td>
 				<td style="text-align: center;">
-				  <img src="clothsim.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="images/2_flop_low.png" width="390px"/>
+				  <figcaption>ks = 100</figcaption>
 				</td>
+				<caption>There are vertical creases in the low stiffness fabric that aren't present in the nominal case.</caption>
 			  </tr>
 			</table>
 		</div>
 
-		<h2>Part 2: Simulation via numerical integration</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<p>
+			When setting the <b>density</b> very high, the cloth bounces more in its swing because the springs are being extended more and the 
+			default damping is not high enough to arrest the oscillatory motion. As expected, the denser cloth also hangs lower than the default parameter.
+		</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="images/2_normal_density.png" width="400px"/>
+				  <figcaption>nominal density = 15 g/cm^2</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="images/2_dense.png" width="400px"/>
+				  <figcaption>density = 5000 g/cm^2 </figcaption>
+				</td>
+				<caption>The denser fabric hangs much lower and distorts the edges. </caption>
+			  </tr>
+			</table>
+		</div>
+
+		<p>
+			When setting <b>damping</b> very low, down to 5%, the cloth behaves almost like a liquid, where many small ripples appear and sustain 
+			their height for a number of seconds as the cloth settles to steady state. Additionally, the cloth swings much further past its vertical than with the nominal damping setting.
+			In contrast, with high damping any ripples that appear as the cloth fall dissapear quickly and the cloth settles to its resting position without swinging past the vertical.
+		</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="images/2_nominal_damping.png" width="400px"/>
+				  <figcaption>damping = 20%</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="images/2_low_damping.png" width="400px"/>
+				  <figcaption>damping = 5%</figcaption>
+				</td>
+				<caption>With a lower damping coefficient the cloth swings well past the vertical. </caption>
+			  </tr>
+			</table>
+		</div>
+
+		<figure>
+			<img src="images/2_pinned4.png" alt="Cloth pinned at four corners" style="width:70%"/>
+			<figcaption>Cloth pinned at four corners.</figcaption>
+		</figure>
 
 		<h2>Part 3: Handling collisions with other objects</h2>
 		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
