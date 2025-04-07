@@ -195,8 +195,35 @@
 			in the direction of the side that the mass was originally on. This correction factor is added onto the last position scaled by the friction factor. This method 
 			is similarly called on every collision object for every point mass.
 		</p>
-		Show us screenshots of your shaded cloth from scene/sphere.json in its final resting state on the sphere using the default ks = 5000 as well as with ks = 500 and ks = 50000. Describe the differences in the results.
-		Show us a screenshot of your shaded cloth lying peacefully at rest on the plane. If you haven’t by now, feel free to express your colorful creativity with the cloth! (You will need to complete the shaders portion first to show custom colors.)
+		<h3>Cloth draped over sphere</h3>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="images/3_nominal.png" width="350px"/>
+				  <figcaption>ks = 5000</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="images/3_500.png" width="350px"/>
+				  <figcaption>ks = 500</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="images/3_50000.png" width="350px"/>
+					<figcaption>ks = 50000</figcaption>
+				</td>
+				<caption>
+					As the cloth gets stiffer, fewer wrinkles are present in the resting state. 
+					The less stiff the cloth is, the lower it drapes and the more conformally it covers the sphere.
+					The very stiff cloth has two prominent wrinkles which obscure the shape of the sphere beneath.
+				</caption>
+			  </tr>
+			</table>
+		</div>
+
+		<figure>
+			<img src="images/3_plane.png" alt="Cloth resting on plane" style="width:70%"/>
+			<figcaption>Cloth resting on the plane.</figcaption>
+		</figure>
 
 		<h2>Part 4: Handling self-collisions</h2>
 		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
