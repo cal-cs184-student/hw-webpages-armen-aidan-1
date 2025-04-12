@@ -226,7 +226,49 @@
 		</figure>
 
 		<h2>Part 4: Handling self-collisions</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<h3>Implementation of self-collisions</h3>
+		<p>
+			To handle self-collisions, for each step of the simulation, I generate a spatial hash map which associates a list of (pointers to) point masses with
+			a 3D grid cell location. Grid cells are identified by unique keys based on the coordinates of their origin. To generate the map,
+			I loop through all point masses, and use <code>hash_position()</code> to find the grid cell a point mass lies in and the associated key,
+			then use that key to find the list associated with the cell, creating the list if it doesn't already exist, then finally appending the point mass to it.
+		</p>
+		<p>
+			In <code>hash_position()</code>, for a given point mass, I find the nearest 
+			grid cell origin by taking the modulo of the mass's \(x,y,z\) position components with \(w,h,t\), the dimensions of a single grid cell.
+			Then I subtract this modulo expression from the \(x,y,z\) position, essentially "flooring" its position to the nearest grid cell origin.
+			I then create a key associated with this origin position to uniquely identify each grid cell as explained above. 	
+		</p>
+		<p>
+			With the hash map generated, during each simulation step I call <code>self_collide()</code> on every point mass. This method finds the key for
+			the current point mass's position with <code>hash_position</code>, then retrieves the vector corresponding to its grid cell from <code>map</code>. Iterating through all the point mass
+			pointers in this vector, I compute if the squared distance between the point mass and another candidate point mass is less than the threshold squared, \(4*thickness^2\).
+			If it is, I compute the length by taking the square root of the length squared, which is only done if we need to make a correction since it is an expensive computation.
+			I then append \(L - (2*thickness)\) times the unit vector pointing from the point pass to the collision candidate to the correction vector, which moves the pointmass away from the candidate
+			by the distance needed to separate the pair by \(2*thickness\). After looping through all the candidates, if the number of corrections required is greater than zero,
+			I update the position of the point mass by the averaged correction vector scaled down by the number of simulation steps.
+		</p>
+		<p><b>Note: Since I am unfamiliar with C++, I explained my desired hash map code in plain english to an LLM so I could learn the corresponding C++ syntax.</b></p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="images/4_early.png" width="350px"/>
+				  <figcaption>Beginning to fall</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="images/4_middle.png" width="350px"/>
+				  <figcaption>Mid fall</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="images/4_end.png" width="350px"/>
+					<figcaption>Resting on the plane, folded over</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+	
 
 		<h2>Part 5: Shaders</h2>
 		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
