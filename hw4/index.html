@@ -47,7 +47,11 @@
 		-->
 
 		<h2>Overview</h2>
-		Give a high-level overview of what you implemented in this homework. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the homework.
+		In this project I simulated cloth with a mass-spring network and added visually convincing features like collisions with objects and self-collisions. 
+		I then implemented different shader programs to give the cloth a wide variety of visual appearances based on lighting calculations and textures. 
+		I thought it was a very interesting approach to use a hash map to reduce the number of collision checks, I could see myself applying an approach like this
+		in my own research.
+		
 
 		<h2>Part 1: Masses and springs</h2>
 		<div style="display: flex; flex-direction: column; align-items: center;">
@@ -304,21 +308,106 @@
 	
 
 		<h2>Part 5: Shaders</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<h3>Shader programs</h3>
+		<p>
+			A shader program consists of two parts, a vertex shader and a fragment shader. A shader modifies verticies
+			and fragments to render them with the desired color and lighting derived from the scene. Data can either come from vertices or from globally
+			defined values declared as uniform variables (uniform accross all vertices/fragments). A vertex shader takes in data 
+			of the given vertex as input, such as its position, normal vector, and corresponding texture coordinate, which are read-only. 
+			This data may be used to compute output vertex data, such as in displacment mapping, which is then passed to the fragment shader.
+		</p>
+		<p>
+			The fragment shader sets the color of the fragment based on scene lighting or from a texture. It takes in vertex data, such as the data 
+			of the three vertices belonging to a triangle and uses these values to compute the color of this fragment when rasterized on the display.
+			A shader program can use vertex data to compute different lighting models and emulate texture by manipulating normal vectors to change the amount of
+			light reflected to the camera.
+		</p>
+		<h3>Blinn-Phong</h3>
+		<p>
+			The Blinn-Phong shading model approximates photo-realistic lighting by shading with a combination of ambient, diffuse, and specular 
+			shading, each weighted by a differnt constant which can be used to tune the balance of each shading type. Ambient light is a baseline level of 
+			light, irrespective of sources in the scene, which behaves like a small emissivity from the shaded fragment. Diffuse lighting gives objects a matte
+			appearance by assuming light from sources is reflected by objects uniformly. The intensity of diffuse lighting is dependent on the angle of the incoming light with respect to the normal,
+			where the more 'square' the light is with the surface, the greater the intensity. Specular shading contributes highlights to the lighting, and 
+			is dependent on the viewing direction. Specular shading is very intense if the camera is looking near the mirror reflection direction, which is symmetric about the normal to the direction between the surface and source.
+			Specular shading can be tuned in terms of intensity and "tightness" of the reflection lobe.
+		</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  	<tr>
+					<td style="text-align: center;">
+						<img src="images/bp_amb.png" width="320px"/>
+						<figcaption>Ambient</figcaption>
+					</td>
+					<td style="text-align: center;">
+						<img src="images/bp_diff.png" width="320px"/>
+						<figcaption>Diffuse</figcaption>
+					</td>
+				</tr>
+				<tr>
+					<td style="text-align: center;">
+						<img src="images/bp_spec.png" width="320px"/>
+						<figcaption>Specular</figcaption>
+					</td>
+					<td style="text-align: center;">
+						<img src="images/bp_total.png" width="320px"/>
+						<figcaption>Total</figcaption>
+					</td>
+				</tr>
+			  
+			</table>
+		</div>
+		<h3>Custom texture: Ernie</h3>
+		<figure>
+			<img src="images/ernie.png" alt="Cloth draped over sphere" style="width:70%"/>
+		</figure>
 
-		<h2>(Optional) Part 6: Extra Credit - Additional cloth simulation features!</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<h4>Bump and displacment mapping</h4>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  	<tr>
+					<td style="text-align: center;">
+						<img src="images/bump_cloth.png" width="320px"/>
+						<figcaption>Bump mapping on the cloth</figcaption>
+					</td>
+					<td style="text-align: center;">
+						<img src="images/bump_sphere.png" width="320px"/>
+						<figcaption>Bump mapping on the sphere</figcaption>
+					</td>
+				</tr>
+			</table>
+		</div>
+
+		<figure>
+			<img src="images/displ_sphere.png" alt="Displacment mapping on the sphere" style="width:60%"/>
+			<figcaption>Displament mapping on the sphere</figcaption>
+		</figure>
+
+		<p>
+			Bump mapping is easy to implement and provides a good visual result at a distance, appearing nearly identical to displacement mapping.
+			Displacement mapping is closer to physical reality, but adds computational cost to the vertex shader program. The differences are visible when you zoom in 
+			on the surface of the sphere at a shallow glancing angle. The edge is smooth with bump mapping since the actual geometry is not altered, whereas this edge is 
+			made bumpy with displament mapping. This difference is not noticeable with a coarse geometry mesh because the vertices are spread too far apart to notice the differences in their position.
+			For a high resolution mesh this difference is noticeable and makes the displacement mapped sphere appear much more realistic. Displacement mapping would be worth it for highly textured objects
+			which the viewer will see up-close in the scene, such as rock faces, asteroids flying towards the player, etc.
+		</p>
+
+		<h3>Mirror shader</h3>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  	<tr>
+					<td style="text-align: center;">
+						<img src="images/mirror_cloth.png" width="320px"/>
+						<figcaption>Mirrored cloth/figcaption>
+					</td>
+					<td style="text-align: center;">
+						<img src="images/mirror_sphere.png" width="320px"/>
+						<figcaption>Mirrored sphere</figcaption>
+					</td>
+				</tr>
+			</table>
+		</div>
 		
-		<h2>Additional Notes (please remove)</h2>
-		<ul>
-			<li>You can also add code if you'd like as so: <code>code code code</code></li>
-			<li>If you'd like to add math equations, 
-				<ul>
-					<li>You can write inline equations like so: \( a^2 + b^2 = c^2 \)</li>
-					<li>You can write display equations like so: \[ a^2 + b^2 = c^2 \]</li>
-				</ul>
-			</li>
-		</ul>
 		</div>
 	</body>
 </html>
